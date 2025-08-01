@@ -169,29 +169,33 @@
       })
     })
     .then(res => res.text())
-    .then(msg => {
-      spinner.classList.add("fade-out");
-      spinnerLabel.classList.add("fade-out");
-      setTimeout(() => {
-        spinner.classList.add("hidden");
-        spinnerLabel.classList.add("hidden");
-        statusEl.innerHTML = `<div class="success-message">✅ ${profession || 'Data'} successfully uploaded for ${crafterName || 'unknown'}!</div><div style="margin-top:10px;">${msg}</div>`;
-        addBtn.classList.remove("hidden");
-        addBtn.classList.add("fade-in");
-      }, 500);
-    })
-    .catch(err => {
-      console.error(err);
-      spinner.classList.add("fade-out");
-      spinnerLabel.classList.add("fade-out");
-      setTimeout(() => {
-        spinner.classList.add("hidden");
-        spinnerLabel.classList.add("hidden");
-        form.classList.remove("hidden", "fade-out");
-        form.classList.add("fade-in");
-        statusEl.innerText = "❌ Upload failed. Try again.";
-      }, 500);
-    });
+.then(msg => {
+  spinner.classList.add("fade-out");
+  spinnerLabel.classList.add("fade-out");
+  setTimeout(() => {
+    spinner.classList.add("hidden");
+    spinnerLabel.classList.add("hidden");
+
+    // Format message with line breaks
+    const formattedMsg = msg
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line)
+      .join('<br>');
+
+    statusEl.innerHTML = `
+      <div class="success-message">
+        ✅ ${profession || 'Data'} successfully uploaded for ${crafterName || 'unknown'}!
+      </div>
+      <div style="margin-top: 10px; line-height: 1.6;">
+        ${formattedMsg}
+      </div>
+    `;
+    addBtn.classList.remove("hidden");
+    addBtn.classList.add("fade-in");
+  }, 500);
+})
+
   }
 
   function resetForm() {
