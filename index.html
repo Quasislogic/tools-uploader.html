@@ -36,7 +36,7 @@
       width: 36px;
       height: 36px;
       animation: spin 1s linear infinite;
-      margin: 20px auto;
+      margin: 30px auto;
     }
 
     @keyframes spin {
@@ -89,18 +89,6 @@
         opacity: 1;
       }
     }
-
-    .spinner-label {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #444;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
   </style>
 </head>
 <body>
@@ -129,11 +117,8 @@
       </button>
     </div>
 
-    <div id="uploadSpinnerContainer" class="hidden fade-in">
-      <div id="spinnerLabel" class="spinner-label">⏳ Uploading...</div>
-      <div id="uploadSpinner" class="spinner"></div>
-    </div>
-
+    <div id="spinnerLabel" style="margin-top: 20px; font-size: 16px;"></div>
+    <div id="uploadSpinner" class="spinner hidden"></div>
     <div id="uploadStatus" class="fade-in"></div>
     <button id="addAnother" class="add-another-btn hidden" onclick="resetForm()">➕ Add Another</button>
   </div>
@@ -147,7 +132,7 @@
     const data = document.getElementById("exportBox").value.trim();
     const form = document.getElementById("uploadForm");
     const statusEl = document.getElementById("uploadStatus");
-    const spinnerContainer = document.getElementById("uploadSpinnerContainer");
+    const spinner = document.getElementById("uploadSpinner");
     const spinnerLabel = document.getElementById("spinnerLabel");
     const addBtn = document.getElementById("addAnother");
 
@@ -156,16 +141,25 @@
       return;
     }
 
-    // Hide form, show spinner
+    // Extract profession and crafter
+    const firstLine = data.split("\n")[0].split("\t");
+    const profession = firstLine[0]?.trim();
+    const crafterName = firstLine[3]?.trim();
+    const spinnerText = (profession && crafterName)
+      ? `⏳ Uploading ${profession} for ${crafterName}...`
+      : `⏳ Uploading...`;
+
+    spinnerLabel.innerText = spinnerText;
+
+    // Fade out form and show spinner
     form.classList.add("fade-out");
     setTimeout(() => {
       form.classList.add("hidden");
-      spinnerContainer.classList.remove("hidden");
-      spinnerContainer.classList.add("fade-in");
-
-      const crafterName = data.split("\n")[0].split("\t")[3]?.trim();
-      spinnerLabel.innerText = crafterName ? `⏳ Uploading as ${crafterName}...` : "⏳ Uploading...";
+      spinner.classList.remove("hidden");
+      spinner.classList.add("fade-in");
     }, 500);
+
+    statusEl.innerText = "";
 
     fetch(SCRIPT_URL, {
       method: "POST",
@@ -176,19 +170,23 @@
     })
     .then(res => res.text())
     .then(msg => {
-      spinnerContainer.classList.add("fade-out");
+      spinner.classList.add("fade-out");
+      spinnerLabel.classList.add("fade-out");
       setTimeout(() => {
-        spinnerContainer.classList.add("hidden");
-        statusEl.innerHTML = `<div class="success-message">${msg}</div>`;
+        spinner.classList.add("hidden");
+        spinnerLabel.classList.add("hidden");
+        statusEl.innerHTML = `<div class="success-message">✅ ${profession || 'Data'} successfully uploaded for ${crafterName || 'unknown'}!</div><div style="margin-top:10px;">${msg}</div>`;
         addBtn.classList.remove("hidden");
         addBtn.classList.add("fade-in");
       }, 500);
     })
     .catch(err => {
       console.error(err);
-      spinnerContainer.classList.add("fade-out");
+      spinner.classList.add("fade-out");
+      spinnerLabel.classList.add("fade-out");
       setTimeout(() => {
-        spinnerContainer.classList.add("hidden");
+        spinner.classList.add("hidden");
+        spinnerLabel.classList.add("hidden");
         form.classList.remove("hidden", "fade-out");
         form.classList.add("fade-in");
         statusEl.innerText = "❌ Upload failed. Try again.";
@@ -199,6 +197,7 @@
   function resetForm() {
     document.getElementById("exportBox").value = "";
     document.getElementById("uploadStatus").innerText = "";
+    document.getElementById("spinnerLabel").innerText = "";
     document.getElementById("addAnother").classList.add("hidden");
     document.getElementById("uploadForm").classList.remove("hidden", "fade-out");
     document.getElementById("uploadForm").classList.add("fade-in");
