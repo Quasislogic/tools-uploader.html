@@ -15,6 +15,15 @@
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
 
   <style>
+    .fade {
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+    .fade.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
     .fancy-spinner {
       margin: 0 auto;
       width: 40px;
@@ -24,8 +33,35 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
+
     @keyframes spin {
       to { transform: rotate(360deg); }
+    }
+
+    .centered-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .add-another-btn {
+      margin-top: 24px;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      background: #d6b87d;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #3e2b1c;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .add-another-btn.show {
+      opacity: 1;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -43,23 +79,26 @@
 
 <div class="body">
   <div id="craftTable_wrapper" class="upload-wrapper" style="max-width: 700px; margin: 40px auto; padding: 30px; background: #fff8dc; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.2); text-align: center;">
-    
-    <div id="uploadSpinner" style="display:none; margin-bottom: 20px;">
+
+    <h1 id="uploadTitle" class="fade">🧪 Psycraft Export Uploader</h1>
+    <p id="uploadDesc" class="fade">Paste your exported profession data below and click upload:</p>
+
+    <textarea id="exportBox" class="fade" placeholder="Paste your data from the addon here..." style="width: 100%; height: 240px; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #a98250; background: #f7f1df; color: #3e2b1c;"></textarea>
+
+    <br><br>
+    <button id="uploadButton" class="fade upload-btn" onclick="uploadExport()" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #f9b233; border: none; color: #3e2b1c; border-radius: 8px; cursor: pointer; transition: background 0.3s;">
+      🚀 Upload to Guild Sheet
+    </button>
+
+    <div id="uploadSpinner" class="fade hidden" style="margin: 30px 0;">
       <div class="fancy-spinner"></div>
       <div style="margin-top: 12px; font-weight: bold; color: #3e2b1c;" id="uploadSpinnerText">Uploading...</div>
     </div>
 
-    <h1 style="margin-top: 0;">🧪 Psycraft Export Uploader</h1>
-    <p style="margin-bottom: 20px;">Paste your exported profession data below and click upload:</p>
+    <div id="uploadStatus" class="fade hidden centered-message" style="margin-top: 20px; font-size: 14px; color: #444;"></div>
 
-    <textarea id="exportBox" placeholder="Paste your data from the addon here..." style="width: 100%; height: 240px; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #a98250; background: #f7f1df; color: #3e2b1c;"></textarea>
+    <button id="addAnotherBtn" class="add-another-btn" onclick="resetUploader()">➕ Add another</button>
 
-    <br><br>
-    <button type="button" class="upload-btn" onclick="uploadExport()" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #f9b233; border: none; color: #3e2b1c; border-radius: 8px; cursor: pointer; transition: background 0.3s;">
-      Upload
-    </button>
-
-    <div id="uploadStatus" style="margin-top: 20px; font-size: 14px; color: #444;"></div>
   </div>
 </div>
 
@@ -67,53 +106,69 @@
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_mHcN3KvSosp-50Tfy5Y2-HU-Bv1badBtL3u4lGiFXI17-xWMwOyl9xr2jmfG4ExMcQ/exec";
   const SECRET_TOKEN = "psycraftUpload123SECRET";
 
+  function fadeOut(el) {
+    el.classList.add('hidden');
+  }
+
+  function fadeIn(el) {
+    el.classList.remove('hidden');
+  }
+
   function uploadExport() {
     const data = document.getElementById("exportBox").value;
-    const statusEl = document.getElementById("uploadStatus");
+    const title = document.getElementById("uploadTitle");
+    const desc = document.getElementById("uploadDesc");
     const textarea = document.getElementById("exportBox");
-    const button = document.querySelector(".upload-btn");
+    const button = document.getElementById("uploadButton");
     const spinner = document.getElementById("uploadSpinner");
     const spinnerText = document.getElementById("uploadSpinnerText");
+    const statusEl = document.getElementById("uploadStatus");
+    const addAnotherBtn = document.getElementById("addAnotherBtn");
 
     if (!data.trim()) {
       statusEl.innerText = "❌ Please paste some data before uploading.";
+      fadeIn(statusEl);
       return;
     }
 
-    textarea.style.display = "none";
-    button.style.display = "none";
-    spinner.style.display = "block";
-    statusEl.innerText = "";
+    // Fade out form elements
+    [title, desc, textarea, button, statusEl].forEach(fadeOut);
+    fadeIn(spinner);
+    addAnotherBtn.classList.remove("show");
 
     const crafterName = data.trim().split("\n")[0].split("\t")[3]?.trim();
     spinnerText.innerText = crafterName ? `Uploading as ${crafterName}...` : "Uploading...";
 
     fetch(SCRIPT_URL, {
       method: "POST",
-      body: new URLSearchParams({
-        data,
-        token: SECRET_TOKEN
-      })
+      body: new URLSearchParams({ data, token: SECRET_TOKEN })
     })
       .then(res => res.text())
       .then(msg => {
-        spinner.style.display = "none";
-        statusEl.innerText = msg;
-
-        if (msg.includes("✅")) {
-          textarea.value = "";
-        } else {
-          textarea.style.display = "block";
-          button.style.display = "inline-block";
-        }
+        fadeOut(spinner);
+        statusEl.innerHTML = msg;
+        fadeIn(statusEl);
+        addAnotherBtn.classList.add("show");
+        if (msg.includes("✅")) textarea.value = "";
       })
       .catch(err => {
         console.error(err);
-        spinner.style.display = "none";
-        textarea.style.display = "block";
-        button.style.display = "inline-block";
+        fadeOut(spinner);
         statusEl.innerText = "❌ Upload failed. Try again.";
+        fadeIn(statusEl);
+        fadeIn(textarea);
+        fadeIn(button);
       });
+  }
+
+  function resetUploader() {
+    ["uploadTitle", "uploadDesc", "exportBox", "uploadButton", "uploadStatus"].forEach(id => {
+      const el = document.getElementById(id);
+      fadeIn(el);
+    });
+    document.getElementById("addAnotherBtn").classList.remove("show");
+    document.getElementById("uploadStatus").innerHTML = "";
+    document.getElementById("exportBox").value = "";
   }
 </script>
 
