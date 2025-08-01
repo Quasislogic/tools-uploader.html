@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Psycraft Export Uploader</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      background: #0b0b0b;
+      color: #eee;
+    }
+    textarea {
+      width: 100%;
+      max-width: 700px;
+      height: 300px;
+      font-family: monospace;
+      font-size: 14px;
+      margin-bottom: 1em;
+    }
+    button {
+      background: #00ccff;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    #uploadStatus {
+      margin-top: 1em;
+      font-size: 14px;
+      color: #88f;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Psycraft Export Uploader</h1>
+  <p>Paste your exported profession data below and click upload:</p>
+  <textarea id="exportBox" placeholder="Paste your data from the addon here..."></textarea>
+  <br>
+  <button onclick="uploadExport()">Upload to Guild Sheet</button>
+  <div id="uploadStatus"></div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_mHcN3KvSosp-50Tfy5Y2-HU-Bv1badBtL3u4lGiFXI17-xWMwOyl9xr2jmfG4ExMcQ/exec";
+    const SECRET_TOKEN = "psycraftUpload123SECRET"; // must match your .gs file
+
+    function uploadExport() {
+      const data = document.getElementById("exportBox").value;
+      const statusEl = document.getElementById("uploadStatus");
+
+      if (!data.trim()) {
+        statusEl.innerText = "❌ Please paste some data before uploading.";
+        return;
+      }
+
+      statusEl.innerText = "⏳ Uploading...";
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: new URLSearchParams({
+          data,
+          token: SECRET_TOKEN
+        })
+      })
+        .then(res => res.text())
+        .then(msg => {
+          statusEl.innerText = msg;
+        })
+        .catch(err => {
+          console.error(err);
+          statusEl.innerText = "❌ Upload failed. Try again.";
+        });
+    }
+  </script>
+</body>
+</html>
