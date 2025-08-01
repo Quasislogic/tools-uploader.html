@@ -36,7 +36,7 @@
       width: 36px;
       height: 36px;
       animation: spin 1s linear infinite;
-      margin: 30px auto;
+      margin: 20px auto;
     }
 
     @keyframes spin {
@@ -70,6 +70,37 @@
       cursor: pointer;
       margin-top: 24px;
     }
+
+    .success-message {
+      color: #4CAF50;
+      font-weight: bold;
+      font-size: 18px;
+      animation: pop-in 0.4s ease;
+      margin-top: 24px;
+    }
+
+    @keyframes pop-in {
+      0% {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .spinner-label {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #444;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -98,7 +129,11 @@
       </button>
     </div>
 
-    <div id="uploadSpinner" class="spinner hidden"></div>
+    <div id="uploadSpinnerContainer" class="hidden fade-in">
+      <div id="spinnerLabel" class="spinner-label">⏳ Uploading...</div>
+      <div id="uploadSpinner" class="spinner"></div>
+    </div>
+
     <div id="uploadStatus" class="fade-in"></div>
     <button id="addAnother" class="add-another-btn hidden" onclick="resetForm()">➕ Add Another</button>
   </div>
@@ -112,7 +147,8 @@
     const data = document.getElementById("exportBox").value.trim();
     const form = document.getElementById("uploadForm");
     const statusEl = document.getElementById("uploadStatus");
-    const spinner = document.getElementById("uploadSpinner");
+    const spinnerContainer = document.getElementById("uploadSpinnerContainer");
+    const spinnerLabel = document.getElementById("spinnerLabel");
     const addBtn = document.getElementById("addAnother");
 
     if (!data) {
@@ -120,16 +156,16 @@
       return;
     }
 
-    // Fade out form
+    // Hide form, show spinner
     form.classList.add("fade-out");
     setTimeout(() => {
       form.classList.add("hidden");
-      spinner.classList.remove("hidden");
-    }, 500);
+      spinnerContainer.classList.remove("hidden");
+      spinnerContainer.classList.add("fade-in");
 
-    const crafterName = data.split("\n")[0].split("\t")[3]?.trim();
-    statusEl.innerText = "";
-    spinner.classList.add("fade-in");
+      const crafterName = data.split("\n")[0].split("\t")[3]?.trim();
+      spinnerLabel.innerText = crafterName ? `⏳ Uploading as ${crafterName}...` : "⏳ Uploading...";
+    }, 500);
 
     fetch(SCRIPT_URL, {
       method: "POST",
@@ -140,19 +176,19 @@
     })
     .then(res => res.text())
     .then(msg => {
-      spinner.classList.add("fade-out");
+      spinnerContainer.classList.add("fade-out");
       setTimeout(() => {
-        spinner.classList.add("hidden");
-        statusEl.innerHTML = msg;
+        spinnerContainer.classList.add("hidden");
+        statusEl.innerHTML = `<div class="success-message">${msg}</div>`;
         addBtn.classList.remove("hidden");
         addBtn.classList.add("fade-in");
       }, 500);
     })
     .catch(err => {
       console.error(err);
-      spinner.classList.add("fade-out");
+      spinnerContainer.classList.add("fade-out");
       setTimeout(() => {
-        spinner.classList.add("hidden");
+        spinnerContainer.classList.add("hidden");
         form.classList.remove("hidden", "fade-out");
         form.classList.add("fade-in");
         statusEl.innerText = "❌ Upload failed. Try again.";
