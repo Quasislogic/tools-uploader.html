@@ -13,6 +13,21 @@
   <!-- Live site stylesheet -->
   <link rel="stylesheet" href="https://psycraft.net/styles.css">
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
+
+  <style>
+    .fancy-spinner {
+      margin: 0 auto;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f9b233;
+      border-top: 4px solid #3e2b1c;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
 
@@ -28,6 +43,11 @@
 
 <div class="body">
   <div id="craftTable_wrapper" class="upload-wrapper" style="max-width: 700px; margin: 40px auto; padding: 30px; background: #fff8dc; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.2); text-align: center;">
+    
+    <div id="uploadSpinner" style="display:none; margin-bottom: 20px;">
+      <div class="fancy-spinner"></div>
+      <div style="margin-top: 12px; font-weight: bold; color: #3e2b1c;" id="uploadSpinnerText">Uploading...</div>
+    </div>
 
     <h1 style="margin-top: 0;">🧪 Psycraft Export Uploader</h1>
     <p style="margin-bottom: 20px;">Paste your exported profession data below and click upload:</p>
@@ -36,13 +56,12 @@
 
     <br><br>
     <button type="button" class="upload-btn" onclick="uploadExport()" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #f9b233; border: none; color: #3e2b1c; border-radius: 8px; cursor: pointer; transition: background 0.3s;">
-      🚀 Upload to Guild Sheet
+      Upload
     </button>
 
     <div id="uploadStatus" style="margin-top: 20px; font-size: 14px; color: #444;"></div>
   </div>
 </div>
-
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_mHcN3KvSosp-50Tfy5Y2-HU-Bv1badBtL3u4lGiFXI17-xWMwOyl9xr2jmfG4ExMcQ/exec";
@@ -51,15 +70,23 @@
   function uploadExport() {
     const data = document.getElementById("exportBox").value;
     const statusEl = document.getElementById("uploadStatus");
+    const textarea = document.getElementById("exportBox");
+    const button = document.querySelector(".upload-btn");
+    const spinner = document.getElementById("uploadSpinner");
+    const spinnerText = document.getElementById("uploadSpinnerText");
 
     if (!data.trim()) {
       statusEl.innerText = "❌ Please paste some data before uploading.";
       return;
     }
 
-    const firstLine = data.trim().split("\n")[0];
-    const crafterName = firstLine.split("\t")[3]?.trim();
-    statusEl.innerText = crafterName ? `⏳ Uploading as ${crafterName}...` : "⏳ Uploading...";
+    textarea.style.display = "none";
+    button.style.display = "none";
+    spinner.style.display = "block";
+    statusEl.innerText = "";
+
+    const crafterName = data.trim().split("\n")[0].split("\t")[3]?.trim();
+    spinnerText.innerText = crafterName ? `Uploading as ${crafterName}...` : "Uploading...";
 
     fetch(SCRIPT_URL, {
       method: "POST",
@@ -68,17 +95,25 @@
         token: SECRET_TOKEN
       })
     })
-    .then(res => res.text())
-    .then(msg => {
-      statusEl.innerText = msg;
-      if (msg.includes("✅")) {
-        document.getElementById("exportBox").value = "";
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      statusEl.innerText = "❌ Upload failed. Try again.";
-    });
+      .then(res => res.text())
+      .then(msg => {
+        spinner.style.display = "none";
+        statusEl.innerText = msg;
+
+        if (msg.includes("✅")) {
+          textarea.value = "";
+        } else {
+          textarea.style.display = "block";
+          button.style.display = "inline-block";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        spinner.style.display = "none";
+        textarea.style.display = "block";
+        button.style.display = "inline-block";
+        statusEl.innerText = "❌ Upload failed. Try again.";
+      });
   }
 </script>
 
