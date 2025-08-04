@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>PsyCraft Tool Uploader</title>
+  <meta property="og:title" content="PsyCraft Tool Uploader">
+  <meta property="og:description" content="PsyCraft Tool Uploader">
+  <meta property="og:image" content="https://psycraft.net/download_2.jfif">
+  <meta property="og:url" content="https://psycraft.net">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/x-icon" href="https://psycraft.net/favicon.ico">
+
+
+  <!-- Live site stylesheet -->
+  <link rel="stylesheet" href="https://psycraft.net/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English&display=swap" rel="stylesheet">
+
+  <style>
+    h1{
+      color: #3e2b1c;
+    }
+    .fade-out {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .fade-in {
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .spinner {
+      border: 5px solid #e3d6b0;
+      border-top: 5px solid #f9b233;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      animation: spin 1s linear infinite;
+      margin: 30px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .upload-wrapper {
+      max-width: 700px;
+      margin: 40px auto !important;
+      padding: 30px;
+      background: #fff8dc;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    #uploadStatus {
+      margin-top: 30px;
+      font-size: 16px;
+    }
+
+    .add-another-btn {
+      padding: 10px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #f9b233;
+      border: none;
+      color: #3e2b1c;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 24px;
+    }
+
+    .success-message {
+      color: #4CAF50;
+      font-weight: bold;
+      font-size: 18px;
+      animation: pop-in 0.4s ease;
+      margin-top: 24px;
+    }
+
+    @keyframes pop-in {
+      0% {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="kenburns-bg"></div>
+  <img class="banner-text" src="https://www.psycraft.net/logo.png" alt="Banner Text">
+</header>
+
+<a href="https://discord.gg/VtJEGs92Fr" target="_blank" class="discord-badge">
+  <img src="https://img.icons8.com/color/48/discord-logo.png" alt="Discord Icon" class="discord-icon">
+  <span class="discord-text">Join us on Discord</span>
+</a>
+
+<div class="body">
+  <div id="craftTable_wrapper" class="upload-wrapper">
+    <div id="uploadForm" class="fade-in">
+      <h1 style="margin-top: 0;">Psycraft Export Uploader</h1>
+      <p style="margin-bottom: 20px;">Paste your exported profession data below and click upload:</p>
+
+      <textarea id="exportBox" placeholder="Paste your data from the addon here..." style="width: 90%; height: 50px; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #a98250; background: #f7f1df; color: #3e2b1c;"></textarea>
+
+      <br><br>
+      <button type="button" class="upload-btn" onclick="uploadExport()" style="padding: 10px 24px; font-size: 16px; font-weight: bold; background: #f9b233; border: none; color: #3e2b1c; border-radius: 8px; cursor: pointer;">
+        Upload
+      </button>
+    </div>
+
+    <div id="spinnerLabel" style="margin-top: 20px; font-size: 16px;"></div>
+    <div id="uploadSpinner" class="spinner hidden"></div>
+    <div id="uploadStatus" class="fade-in"></div>
+    <button id="addAnother" class="add-another-btn hidden" onclick="resetForm()">➕ Add Another</button>
+  </div>
+</div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_mHcN3KvSosp-50Tfy5Y2-HU-Bv1badBtL3u4lGiFXI17-xWMwOyl9xr2jmfG4ExMcQ/exec";
+  const SECRET_TOKEN = "psycraftUpload123SECRET";
+
+  function uploadExport() {
+    const data = document.getElementById("exportBox").value.trim();
+    const form = document.getElementById("uploadForm");
+    const statusEl = document.getElementById("uploadStatus");
+    const spinner = document.getElementById("uploadSpinner");
+    const spinnerLabel = document.getElementById("spinnerLabel");
+    const addBtn = document.getElementById("addAnother");
+
+    if (!data) {
+      statusEl.innerText = "❌ Please paste some data before uploading.";
+      return;
+    }
+
+    // Extract profession and crafter
+    const firstLine = data.split("\n")[0].split("\t");
+    const profession = firstLine[0]?.trim();
+    const crafterName = firstLine[3]?.trim();
+    const spinnerText = (profession && crafterName)
+      ? `⏳ Uploading ${profession} for ${crafterName}...`
+      : `⏳ Uploading...`;
+
+    spinnerLabel.innerText = spinnerText;
+
+    // Fade out form and show spinner
+    form.classList.add("fade-out");
+    setTimeout(() => {
+      form.classList.add("hidden");
+      spinner.classList.remove("hidden");
+      spinner.classList.add("fade-in");
+    }, 500);
+
+    statusEl.innerText = "";
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: new URLSearchParams({
+        data,
+        token: SECRET_TOKEN
+      })
+    })
+    .then(res => res.text())
+.then(msg => {
+  spinner.classList.add("fade-out");
+  spinnerLabel.classList.add("fade-out");
+  setTimeout(() => {
+    spinner.classList.add("hidden");
+    spinnerLabel.classList.add("hidden");
+
+    // Format message with line breaks
+    const formattedMsg = msg
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line)
+      .join('<br>');
+
+    statusEl.innerHTML = `
+      <div class="success-message">
+        ✅ ${profession || 'Data'} successfully uploaded for ${crafterName || 'unknown'}!
+      </div>
+      <div style="margin-top: 10px; line-height: 1.6;">
+        ${formattedMsg}
+      </div>
+    `;
+    addBtn.classList.remove("hidden");
+    addBtn.classList.add("fade-in");
+  }, 500);
+})
+
+  }
+
+  function resetForm() {
+    document.getElementById("exportBox").value = "";
+    document.getElementById("uploadStatus").innerText = "";
+    document.getElementById("spinnerLabel").innerText = "";
+    document.getElementById("addAnother").classList.add("hidden");
+    document.getElementById("uploadForm").classList.remove("hidden", "fade-out");
+    document.getElementById("uploadForm").classList.add("fade-in");
+  }
+</script>
+
+</body>
+</html>
+
+
+
